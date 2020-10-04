@@ -20,8 +20,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="df991a06-5442-4ab6-882b-dc640eadac57" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/client/storage.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/storage.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/storage.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -83,9 +84,9 @@
       <screen x="0" y="23" width="1200" height="1856" />
     </state>
     <state x="398" y="599" key="#Go_Modules/1200.1161.1280.800/-1200.0.1200.1920/0.23.1200.1856@0.23.1200.1856" timestamp="1601820983275" />
-    <state x="-900" y="236" width="854" height="1453" key="dock-window-1" timestamp="1601821606874">
+    <state x="-1176" y="236" width="1130" height="1453" key="dock-window-1" timestamp="1601822977521">
       <screen x="-1200" y="0" width="1200" height="1920" />
     </state>
-    <state x="-900" y="236" width="854" height="1453" key="dock-window-1/1200.1161.1280.800/-1200.0.1200.1920/0.23.1200.1856@0.23.1200.1856" timestamp="1601821606874" />
+    <state x="-1176" y="236" width="1130" height="1453" key="dock-window-1/1200.1161.1280.800/-1200.0.1200.1920/0.23.1200.1856@0.23.1200.1856" timestamp="1601822977521" />
   </component>
 </project>

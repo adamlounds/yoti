@@ -19,7 +19,11 @@ func main() {
 
 	aesKey, _ := myClient.Store([]byte("abc"), []byte("plaintextxx"))
 
-	fmt.Printf("stored plaintext, got %v", aesKey)
+	fmt.Printf("stored plaintext, got aesKey %v", aesKey)
+
+	payload, _ := myClient.Retrieve([]byte("abc"), aesKey)
+	fmt.Printf("retrieved, got payload %v", payload)
+
 
 
 
