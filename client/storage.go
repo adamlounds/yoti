@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 )
@@ -17,6 +18,7 @@ type Entry struct {
 type ClientInstance struct {
 	DataStore map[string]Entry
 }
+const secretSalt = "1911797e2e9d418b8399fafd79de79f14c6370ae58c2a314195a35bcfdd359ae"
 
 func (c ClientInstance) Store(id, payload []byte) (aesKey []byte, err error) {
 	aesKey, salt, ciphertext, err := encrypt(payload)
@@ -25,13 +27,17 @@ func (c ClientInstance) Store(id, payload []byte) (aesKey []byte, err error) {
 		return nil, err
 	}
 
-	storedId := sha1.Sum(id)
+	idSalt, _ := hex.DecodeString(secretSalt)
+	saltedId := append(id, idSalt...)
+	storedId := sha1.Sum(saltedId)
 	c.DataStore[string(storedId[:])] = Entry{ciphertext, salt} // TODO mutex/safe update
 	return aesKey, nil
 }
 
 func (c ClientInstance) Retrieve(id, aesKey []byte) (payload []byte, err error) {
-	storedId := sha1.Sum(id)
+	idSalt, _ := hex.DecodeString(secretSalt)
+	saltedId := append(id, idSalt...);
+	storedId := sha1.Sum(saltedId)
 	entry, ok := c.DataStore[string(storedId[:])]
 	if !ok {
 		return nil, fmt.Errorf("id not found")
