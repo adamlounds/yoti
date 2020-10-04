@@ -87,7 +87,6 @@ func encrypt(plaintext []byte) (aesKey, salt, ciphertext []byte, err error) {
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, nil, nil, err
 	}
-	salt = []byte("SALTSALTSALT")
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
