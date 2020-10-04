@@ -26,13 +26,19 @@ func main() {
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().UTC()
 	}
-	var myClient client.ClientInstance
-	myClient = client.ClientInstance{DataStore: make(map[string]client.Entry)}
+	myClient := client.ClientInstance{DataStore: make(map[string]client.Entry)}
 
 	http.HandleFunc("/store", func (w http.ResponseWriter, r * http.Request) {
+		// TODO move to middleware, add more details, probably use a standard
+		// per-request logging middleware
+		defer func(begin time.Time) {
+			logger.Info().
+				Dur("duration", time.Since(begin)).
+				Msg("store")
+		}(time.Now())
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			logger.Warn().Msg("cannot read body")
+			logger.Warn().Err(err).Msg("cannot read body")
 			http.Error(w, "cannot read body", http.StatusBadRequest)
 			return
 		}
@@ -40,10 +46,20 @@ func main() {
 		var req StoreRequest
 		json.Unmarshal(body, &req)
 		aesKey, err := myClient.Store([]byte(req.Id), []byte(req.Payload))
+		if err != nil {
+			logger.Warn().Err(err).Msg("cannot encrypt")
+			http.Error(w, "cannot read body", http.StatusInternalServerError)
+			return
+		}
 		fmt.Fprint(w, hex.EncodeToString(aesKey))
 	})
 
 	http.HandleFunc("/retrieve", func (w http.ResponseWriter, r * http.Request) {
+		defer func(begin time.Time) {
+			logger.Info().
+				Dur("duration", time.Since(begin)).
+				Msg("retrieve")
+		}(time.Now())
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			logger.Warn().Msg("cannot read body")
@@ -56,7 +72,7 @@ func main() {
 		aesKey := make([]byte, 32)
 		n, err := hex.Decode(aesKey, []byte(req.Key))
 		if err != nil {
-			logger.Warn().Str("key", req.Key).Msg("bad key")
+			logger.Warn().Str("key", req.Key).Err(err).Msg("bad key")
 			http.Error(w, "bad key", http.StatusBadRequest)
 			return
 		}
@@ -67,8 +83,8 @@ func main() {
 		}
 		payload, err := myClient.Retrieve([]byte(req.Id), aesKey)
 		if err != nil {
-			logger.Warn().Str("id", req.Id).Msg("cannot fetch/decrypt")
-			http.Error(w, "cannot fetch/decrypt", http.StatusBadRequest)
+			logger.Warn().Str("id", req.Id).Err(err).Msg("cannot fetch/decrypt")
+			http.Error(w, "cannot fetch/decrypt", http.StatusInternalServerError)
 			return
 
 		}
