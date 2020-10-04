@@ -15,15 +15,14 @@ func main() {
 	}
 	logger.Info().Msg("starting");
 	var myClient client.ClientInstance
-	myClient = client.ClientInstance{DataStore: make(map[string][]byte)}
+	myClient = client.ClientInstance{DataStore: make(map[string]client.Entry)}
 
 	aesKey, _ := myClient.Store([]byte("abc"), []byte("plaintextxx"))
 
-	fmt.Printf("stored plaintext, got aesKey %v", aesKey)
-
 	payload, _ := myClient.Retrieve([]byte("abc"), aesKey)
-	fmt.Printf("retrieved, got payload %v", payload)
+	fmt.Printf("retrieved, got payload %s\n", string(payload))
 
+	//payload, err := myClient.Retrieve([]byte("def"), aesKey)
 
 
 
