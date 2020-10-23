@@ -1,4 +1,4 @@
-package client
+package server
 
 // Client provides functionality to interact with the encryption-server
 type Client interface {

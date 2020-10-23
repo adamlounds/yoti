@@ -4,7 +4,7 @@ import(
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/adamlounds/yoti/client"
+	"github.com/adamlounds/yoti/server"
 	"github.com/rs/zerolog"
 	"io/ioutil"
 	"net/http"
@@ -26,7 +26,7 @@ func main() {
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().UTC()
 	}
-	myClient := client.ClientInstance{DataStore: make(map[string]client.Entry)}
+	myClient := server.ClientInstance{DataStore: make(map[string]server.Entry)}
 
 	http.HandleFunc("/store", func (w http.ResponseWriter, r * http.Request) {
 		// TODO move to middleware, add more details, probably use a standard
