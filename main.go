@@ -13,12 +13,12 @@ import(
 )
 
 type StoreRequest struct {
-	Id string
-	Payload string
+	Id []byte
+	Payload []byte
 }
 type RetrieveRequest struct {
-	Id string
-	Key string
+	Id []byte
+	AesKey []byte
 }
 
 func main() {
@@ -69,26 +69,19 @@ func main() {
 
 		var req RetrieveRequest
 		json.Unmarshal(body, &req)
-		aesKey := make([]byte, 32)
-		n, err := hex.Decode(aesKey, []byte(req.Key))
-		if err != nil {
-			logger.Warn().Str("key", req.Key).Err(err).Msg("bad key")
-			http.Error(w, "bad key", http.StatusBadRequest)
-			return
-		}
-		if n != 32 {
-			logger.Warn().Str("key", req.Key).Msg("short/long key")
+		if len(req.AesKey) != 32 {
+			logger.Warn().Bytes("aesKey", req.AesKey).Msg("short/long aesKey")
 			http.Error(w, "short/long key", http.StatusBadRequest)
 			return
 		}
-		payload, err := myClient.Retrieve([]byte(req.Id), aesKey)
+
+		payload, err := myClient.Retrieve(req.Id, req.AesKey)
 		if err != nil {
-			logger.Warn().Str("id", req.Id).Err(err).Msg("cannot fetch/decrypt")
+			logger.Warn().Bytes("id", req.Id).Err(err).Msg("cannot fetch/decrypt")
 			http.Error(w, "cannot fetch/decrypt", http.StatusInternalServerError)
 			return
-
 		}
-		fmt.Fprint(w, string(payload))
+		w.Write(payload)
 	})
 
 	logger.Info().Int("port", 8080).Msg("starting")
