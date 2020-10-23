@@ -76,23 +76,25 @@ verification process.
 
 ### Testing
 
-To test, first compile and run the code
+To test, first compile and run the server code
 
 ```
 go run .
 {"level":"info","port":8080,"time":"2020-10-04T16:25:01Z","message":"starting"}
 ```
 You should see a log message telling you where the http endpoint is.
-Add some data to your store via curl and get an encryption key back. Note that
+Add some data to your store via the CLI and get an encryption key back. Note that
 the key itself is not kept on the server; we hash it so nobody can guess your id.
 
 ```
-curl -XPOST -d'{"id":"123", "payload":"héllßo, world"}' localhost:8080/store
+cd tools/cli
+go build .
+./cli store <id, eg "a"> <filename, eg cli.go>
 1911797e2e9d418b8399fafd79de79f14c6370ae58c2a314195a35bcfdd359ae
 ```
 
-To retrieve, call the `retrieve` endpoint with your id and the encryption key.
+To retrieve,
 ```
-curl -XPOST -d'{"id":"123", "key":"1911797e2e9d418b8399fafd79de79f14c6370ae58c2a314195a35bcfdd359ae"}' localhost:8080/retrieve
-héllßo, world
+./cli retrieve a 1911797e2e9d418b8399fafd79de79f14c6370ae58c2a314195a35bcfdd359ae
+<file contents written to stdout>
 ```
