@@ -1,0 +1,22 @@
+version: "3.8"
+x-environment: &commonEnvironment
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+services:
+  web:
+    build: ./
+    container_name: storagesvr
+    depends_on:
+      - minio
+    init: true
+    ports:
+      - "8080:8080"
+    environment: *commonEnvironment
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9001:9000"
+    entrypoint: sh
+    environment: *commonEnvironment
+    command: -c 'mkdir -p /export/storage && /usr/bin/minio server /export'
