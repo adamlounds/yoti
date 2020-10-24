@@ -53,7 +53,7 @@ func (c ClientInstance) Retrieve(id, aesKey []byte) (payload []byte, err error) 
 	return plaintext, nil
 }
 
-func decrypt(aesKey, salt, ciphertext []byte) (plaintext []byte, err error) {
+func decrypt(aesKey, iv, ciphertext []byte) (plaintext []byte, err error) {
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func decrypt(aesKey, salt, ciphertext []byte) (plaintext []byte, err error) {
 		return nil, err
 	}
 
-	plaintext, err = aesgcm.Open(nil, salt, ciphertext, nil)
+	plaintext, err = aesgcm.Open(nil, iv, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func decrypt(aesKey, salt, ciphertext []byte) (plaintext []byte, err error) {
 	return plaintext, nil
 }
 
-func encrypt(plaintext []byte) (aesKey, salt, ciphertext []byte, err error) {
+func encrypt(plaintext []byte) (aesKey, iv, ciphertext []byte, err error) {
 	aesKey = make([]byte, 32)
 	_, err = rand.Read(aesKey)
 	if err != nil {
@@ -83,8 +83,8 @@ func encrypt(plaintext []byte) (aesKey, salt, ciphertext []byte, err error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	salt = make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+	iv = make([]byte, 12)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -93,7 +93,7 @@ func encrypt(plaintext []byte) (aesKey, salt, ciphertext []byte, err error) {
 		return nil, nil, nil, err
 	}
 
-	return aesKey, salt, aesgcm.Seal(nil, salt, plaintext, nil), nil
+	return aesKey, iv, aesgcm.Seal(nil, iv, plaintext, nil), nil
 
 }
 
