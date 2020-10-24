@@ -18,7 +18,7 @@ func main() {
 	flag.Parse()
 
 	if flag.NArg() == 0 {
-		fmt.Fprint(os.Stderr, "ERROR: you need to specify action: get with id and key or put with filename\n")
+		fmt.Fprint(os.Stderr, "ERROR: you need to specify action: store with id and key or retrieve with filename\n")
 		os.Exit(1)
 	}
 	action := flag.Arg(0)
