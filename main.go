@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/adamlounds/yoti/dao"
-	"github.com/adamlounds/yoti/server"
+	"github.com/adamlounds/yoti/crypto"
 	"github.com/adamlounds/yoti/store"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
@@ -68,7 +68,7 @@ func main() {
 			return
 		}
 
-		aesKey, ciphertext, err := server.Encrypt(req.Payload)
+		aesKey, ciphertext, err := crypto.Encrypt(req.Payload)
 		if err != nil {
 			reqLogger.Warn().Err(err).Msg("cannot encrypt")
 			http.Error(w, "cannot read body", http.StatusInternalServerError)
@@ -128,7 +128,7 @@ func main() {
 			http.Error(w, "cannot fetch", http.StatusInternalServerError)
 			return
 		}
-		payload, err := server.Decrypt(req.AesKey, ciphertext)
+		payload, err := crypto.Decrypt(req.AesKey, ciphertext)
 		if err != nil {
 			reqLogger.Warn().Bytes("id", req.Id).Err(err).Msg("cannot decrypt")
 			http.Error(w, "cannot decrypt", http.StatusInternalServerError)

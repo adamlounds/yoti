@@ -1,10 +1,9 @@
-package server
+package crypto
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"io"
 )
 
 func Decrypt(aesKey, body []byte) (plaintext []byte, err error) {
@@ -13,14 +12,14 @@ func Decrypt(aesKey, body []byte) (plaintext []byte, err error) {
 		return nil, err
 	}
 
-	aesgcm, err := cipher.NewGCM(block)
+	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
 	}
 
 	iv := body[:12]
 	ciphertext := body[12:]
-	plaintext, err = aesgcm.Open(nil, iv, ciphertext, nil)
+	plaintext, err = gcm.Open(nil, iv, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -35,22 +34,24 @@ func Encrypt(plaintext []byte) (aesKey, body []byte, err error) {
 		return nil, nil, err
 	}
 
+	iv := make([]byte, 12)
+	_, err = rand.Read(iv)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return nil, nil, err
 	}
-	iv := make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, nil, err
-	}
 
-	aesgcm, err := cipher.NewGCM(block)
+	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// need both iv+key to decrypt. Return key, store known-length iv with ciphertext.
-	ciphertext := aesgcm.Seal(nil, iv, plaintext, nil)
+	ciphertext := gcm.Seal(nil, iv, plaintext, nil)
 	return aesKey, append(iv, ciphertext...), nil
 }
 
