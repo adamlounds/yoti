@@ -6,24 +6,25 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/adamlounds/yoti/dao"
-	"github.com/adamlounds/yoti/server"
-	"github.com/adamlounds/yoti/store"
-	"github.com/oklog/ulid/v2"
-	"github.com/rs/zerolog"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/adamlounds/yoti/dao"
+	"github.com/adamlounds/yoti/server"
+	"github.com/adamlounds/yoti/store"
+	"github.com/oklog/ulid/v2"
+	"github.com/rs/zerolog"
 )
 
 type StoreRequest struct {
-	Id []byte
+	Id      []byte
 	Payload []byte
 }
 type RetrieveRequest struct {
-	Id []byte
+	Id     []byte
 	AesKey []byte
 }
 
@@ -40,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/store", func (w http.ResponseWriter, r * http.Request) {
+	http.HandleFunc("/store", func(w http.ResponseWriter, r *http.Request) {
 		reqId := ulid.MustNew(ulid.Now(), rand.Reader)
 		reqLogger := logger.With().Str("reqid", reqId.String()).Logger()
 		daoFac := dao.NewFactory(reqLogger, storeFac)
@@ -60,7 +61,12 @@ func main() {
 		}
 
 		var req StoreRequest
-		json.Unmarshal(body, &req)
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			reqLogger.Warn().Err(err).Msg("cannot unmarshal json")
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
 
 		aesKey, ciphertext, err := server.Encrypt(req.Payload)
 		if err != nil {
@@ -83,7 +89,7 @@ func main() {
 		fmt.Fprint(w, hex.EncodeToString(aesKey))
 	})
 
-	http.HandleFunc("/retrieve", func (w http.ResponseWriter, r * http.Request) {
+	http.HandleFunc("/retrieve", func(w http.ResponseWriter, r *http.Request) {
 		reqId := ulid.MustNew(ulid.Now(), rand.Reader)
 		reqLogger := logger.With().Str("reqid", reqId.String()).Logger()
 		daoFac := dao.NewFactory(reqLogger, storeFac)
@@ -101,7 +107,12 @@ func main() {
 		}
 
 		var req RetrieveRequest
-		json.Unmarshal(body, &req)
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			reqLogger.Warn().Err(err).Msg("cannot unmarshal json")
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
 		if len(req.AesKey) != 32 {
 			reqLogger.Warn().Bytes("aesKey", req.AesKey).Msg("short/long aesKey")
 			http.Error(w, "short/long key", http.StatusBadRequest)
@@ -123,7 +134,7 @@ func main() {
 			http.Error(w, "cannot decrypt", http.StatusInternalServerError)
 			return
 		}
-		w.Write(payload)
+		_, _ = w.Write(payload)
 	})
 
 	logger.Info().Int("port", 8080).Msg("starting")
