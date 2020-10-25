@@ -32,7 +32,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	//fmt.Printf("new client created %s %s\n", *endpoint, action)
 	client, err := client.NewClient(&client.Config{
 		Endpoint: *endpoint,
 	})
