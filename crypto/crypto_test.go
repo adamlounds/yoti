@@ -42,7 +42,7 @@ func TestDecrypt(t *testing.T) {
 	}
 
 	body[0] = 'a'
-	plaintext, err = Decrypt(aesKey, body)
+	_, err = Decrypt(aesKey, body)
 	if err == nil {
 		t.Errorf("missing error when decrypting bad data")
 	}
