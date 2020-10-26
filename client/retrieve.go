@@ -21,10 +21,16 @@ func (c *httpClient) Retrieve(id, aeskey []byte) (payload []byte, err error) {
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/retrieve", c.endpoint), bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
 	_, respBody, err := c.do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 	return respBody, nil
 }
 

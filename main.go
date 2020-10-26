@@ -1,89 +1,142 @@
 package main
 
-import(
+import (
+	"crypto/rand"
+	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/adamlounds/yoti/server"
-	"github.com/rs/zerolog"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/adamlounds/yoti/dao"
+	"github.com/adamlounds/yoti/crypto"
+	"github.com/adamlounds/yoti/store"
+	"github.com/oklog/ulid/v2"
+	"github.com/rs/zerolog"
 )
 
 type StoreRequest struct {
-	Id []byte
+	Id      []byte
 	Payload []byte
 }
 type RetrieveRequest struct {
-	Id []byte
+	Id     []byte
 	AesKey []byte
 }
+
+const secretSalt = "1911797e2e9d418b8399fafd79de79f14c6370ae58c2a314195a35bcfdd359ae"
 
 func main() {
 	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().UTC()
 	}
-	myClient := server.ClientInstance{DataStore: make(map[string]server.Entry)}
+	storeFac, err := store.NewStoreFactory()
+	if err != nil {
+		logger.Error().Err(err).Msg("Cannot create data stores")
+		os.Exit(1)
+	}
 
-	http.HandleFunc("/store", func (w http.ResponseWriter, r * http.Request) {
+	http.HandleFunc("/store", func(w http.ResponseWriter, r *http.Request) {
+		reqId := ulid.MustNew(ulid.Now(), rand.Reader)
+		reqLogger := logger.With().Str("reqid", reqId.String()).Logger()
+		daoFac := dao.NewFactory(reqLogger, storeFac)
+
 		// TODO move to middleware, add more details, probably use a standard
 		// per-request logging middleware
 		defer func(begin time.Time) {
-			logger.Info().
+			reqLogger.Info().
 				Dur("duration", time.Since(begin)).
 				Msg("store")
 		}(time.Now())
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			logger.Warn().Err(err).Msg("cannot read body")
+			reqLogger.Warn().Err(err).Msg("cannot read body")
 			http.Error(w, "cannot read body", http.StatusBadRequest)
 			return
 		}
 
 		var req StoreRequest
-		json.Unmarshal(body, &req)
-		aesKey, err := myClient.Store([]byte(req.Id), []byte(req.Payload))
+		err = json.Unmarshal(body, &req)
 		if err != nil {
-			logger.Warn().Err(err).Msg("cannot encrypt")
+			reqLogger.Warn().Err(err).Msg("cannot unmarshal json")
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+
+		aesKey, ciphertext, err := crypto.Encrypt(req.Payload)
+		if err != nil {
+			reqLogger.Warn().Err(err).Msg("cannot encrypt")
 			http.Error(w, "cannot read body", http.StatusInternalServerError)
 			return
 		}
+
+		idSalt, _ := hex.DecodeString(secretSalt)
+		saltedId := append(req.Id, idSalt...)
+		storedId := sha1.Sum(saltedId)
+
+		err = daoFac.Document.Store(storedId[:], ciphertext)
+		if err != nil {
+			reqLogger.Warn().Err(err).Msg("cannot store")
+			http.Error(w, "cannot store", http.StatusInternalServerError)
+			return
+		}
+
 		fmt.Fprint(w, hex.EncodeToString(aesKey))
 	})
 
-	http.HandleFunc("/retrieve", func (w http.ResponseWriter, r * http.Request) {
+	http.HandleFunc("/retrieve", func(w http.ResponseWriter, r *http.Request) {
+		reqId := ulid.MustNew(ulid.Now(), rand.Reader)
+		reqLogger := logger.With().Str("reqid", reqId.String()).Logger()
+		daoFac := dao.NewFactory(reqLogger, storeFac)
+
 		defer func(begin time.Time) {
-			logger.Info().
+			reqLogger.Info().
 				Dur("duration", time.Since(begin)).
 				Msg("retrieve")
 		}(time.Now())
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			logger.Warn().Msg("cannot read body")
+			reqLogger.Warn().Msg("cannot read body")
 			http.Error(w, "cannot read body", http.StatusBadRequest)
 			return
 		}
 
 		var req RetrieveRequest
-		json.Unmarshal(body, &req)
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			reqLogger.Warn().Err(err).Msg("cannot unmarshal json")
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
 		if len(req.AesKey) != 32 {
-			logger.Warn().Bytes("aesKey", req.AesKey).Msg("short/long aesKey")
+			reqLogger.Warn().Bytes("aesKey", req.AesKey).Msg("short/long aesKey")
 			http.Error(w, "short/long key", http.StatusBadRequest)
 			return
 		}
+		idSalt, _ := hex.DecodeString(secretSalt)
+		saltedId := append(req.Id, idSalt...)
+		storedId := sha1.Sum(saltedId)
 
-		payload, err := myClient.Retrieve(req.Id, req.AesKey)
+		ciphertext, err := daoFac.Document.Retrieve(storedId[:])
 		if err != nil {
-			logger.Warn().Bytes("id", req.Id).Err(err).Msg("cannot fetch/decrypt")
-			http.Error(w, "cannot fetch/decrypt", http.StatusInternalServerError)
+			reqLogger.Warn().Bytes("id", req.Id).Err(err).Msg("cannot fetch")
+			http.Error(w, "cannot fetch", http.StatusInternalServerError)
 			return
 		}
-		w.Write(payload)
+		payload, err := crypto.Decrypt(req.AesKey, ciphertext)
+		if err != nil {
+			reqLogger.Warn().Bytes("id", req.Id).Err(err).Msg("cannot decrypt")
+			http.Error(w, "cannot decrypt", http.StatusInternalServerError)
+			return
+		}
+		_, _ = w.Write(payload)
 	})
 
 	logger.Info().Int("port", 8080).Msg("starting")
-	logger.Info().Err( http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
