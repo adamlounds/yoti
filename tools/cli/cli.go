@@ -52,7 +52,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ERROR: cannot store (%s)", err)
 			os.Exit(1)
 		}
-		fmt.Fprint(os.Stdout, string(aesKey), "\n")
+		fmt.Fprintf(os.Stdout, "%s\n", aesKey)
 		os.Exit(0)
 	}
 	if action == "retrieve" {

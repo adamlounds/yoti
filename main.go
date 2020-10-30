@@ -2,18 +2,17 @@ package main
 
 import (
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/adamlounds/yoti/dao"
 	"github.com/adamlounds/yoti/crypto"
+	"github.com/adamlounds/yoti/dao"
 	"github.com/adamlounds/yoti/store"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
@@ -77,7 +76,7 @@ func main() {
 
 		idSalt, _ := hex.DecodeString(secretSalt)
 		saltedId := append(req.Id, idSalt...)
-		storedId := sha1.Sum(saltedId)
+		storedId := sha256.Sum256(saltedId)
 
 		err = daoFac.Document.Store(storedId[:], ciphertext)
 		if err != nil {
@@ -86,7 +85,9 @@ func main() {
 			return
 		}
 
-		fmt.Fprint(w, hex.EncodeToString(aesKey))
+		hexKey := make([]byte, hex.EncodedLen(len(aesKey)))
+		_ = hex.Encode(hexKey, aesKey)
+		_, _ = w.Write(hexKey) // nocheck: if write fails then any error is also likely to fail
 	})
 
 	http.HandleFunc("/retrieve", func(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +121,7 @@ func main() {
 		}
 		idSalt, _ := hex.DecodeString(secretSalt)
 		saltedId := append(req.Id, idSalt...)
-		storedId := sha1.Sum(saltedId)
+		storedId := sha256.Sum256(saltedId)
 
 		ciphertext, err := daoFac.Document.Retrieve(storedId[:])
 		if err != nil {
