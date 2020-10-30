@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/adamlounds/yoti/tools/cli/client"
 	"io/ioutil"
 	"os"
-	"github.com/adamlounds/yoti/client"
 )
 
 const (
