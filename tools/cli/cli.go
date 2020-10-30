@@ -32,7 +32,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	//fmt.Printf("new client created %s %s\n", *endpoint, action)
 	client, err := client.NewClient(&client.Config{
 		Endpoint: *endpoint,
 	})
@@ -66,7 +65,7 @@ func main() {
 			os.Exit(1)
 		}
 		if n != 32 {
-			fmt.Fprintf(os.Stderr, "ERROR: aesKey must be 64 hexits", err)
+			fmt.Fprint(os.Stderr, "ERROR: aesKey must be 64 hexits", err)
 			os.Exit(1)
 		}
 

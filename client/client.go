@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// NewClient returns a new Client
 func NewClient(cfg *Config) (Client, error) {
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil {
